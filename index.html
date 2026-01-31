@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>2026 Scouting App</title>
+    
+    <!-- React and Babel from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Configuration for images - EDIT THESE PATHSSAJDHKJSADSA
+        const IMAGE_CONFIG = {
+          fieldMap: './field-map.png',        // Path to your field position map
+          background: './background.png'       // Path to your background image
+        };
+
+        // Number Stepper Component
+        const NumberStepper = ({ label, value, onChange }) => {
+          const handleIncrement = (amount) => {
+            onChange(Math.max(0, value + amount));
+          };
+
+          return (
+            <div className="numberStepperSection">
+              <label>{label}</label>
+              <div className="stepperContent">
+                <div className="numberDisplay">{value}</div>
+                <div className="stepButtons">
+                  <button type="button" onClick={() => handleIncrement(-5)}>-5</button>
+                  <button type="button" onClick={() => handleIncrement(-1)}>-1</button>
+                  <button type="button" onClick={() => handleIncrement(1)}>+1</button>
+                  <button type="button" onClick={() => handleIncrement(5)}>+5</button>
+                  <button type="button" onClick={() => handleIncrement(10)}>+10</button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Radio Group Component with label click support
+        const RadioGroup = ({ title, name, options, value, onChange, mandatory }) => {
+          return (
+            <div className="radio">
+              <p>{title} {mandatory && <span className="mandatory">*</span>}</p>
+              <div className="radioInput">
+                {options.map((option) => (
+                  <div key={option.value} className="radioOption">
+                    <label 
+                      className="radioLabel" 
+                      onClick={() => onChange(option.value)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {option.label}
+                    </label>
+                    <input
+                      type="radio"
+                      name={name}
+                      value={option.value}
+                      checked={value === option.value}
+                      onChange={(e) => onChange(e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        };
+
+        // Checkbox Group Component with label click support
+        const CheckboxGroup = ({ title, options, values, onChange, mandatory }) => {
+          return (
+            <div className="radio">
+              <p>{title} {mandatory && <span className="mandatory">*</span>}</p>
+              <div className="radioInput">
+                {options.map((option) => (
+                  <div key={option.name} className="radioOption">
+                    <label 
+                      htmlFor={option.name}
+                      onClick={() => onChange(option.name, !values[option.name])}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {option.label}
+                    </label>
+                    <input
+                      type="checkbox"
+                      name={option.name}
+                      id={option.name}
+                      checked={values[option.name] || false}
+                      onChange={(e) => onChange(option.name, e.target.checked)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        };
+
+        // Main Scouting App Component
+        function ScoutingApp() {
+          // Inline dropdown data
+          const scouterNamesData = [
+            "Aahana D", "Alex H", "Andrew H", "Anthony K", "Arianna L", "Aashish M", 
+            "Bowen X", "Bradley P", "Bryanna H", "CJ", "Cameron O", "Cameronn L", 
+            "Cate C", "Daniel F", "Daniel Xi", "Eduardo M", "Emmeline T", "Ethan G", 
+            "Evan P", "Gabriel J", "Gavynn T", "Grace J", "Grae S", "Hannah S", 
+            "Jasper M", "Jessica T", "JP M", "Julian R", "Katherine B", "Kevin W", 
+            "Laura H", "Liam L", "Lori", "Mark S", "Michael S", "Misha G", 
+            "Myra J", "Natalie C", "Nazeer H", "Nova P", "Nuhan H", "Roger C", 
+            "Roy W", "Shaotan L", "Tino N", "Tony K", "Trace V", "Yu C", 
+            "Kyle H", "Nick Z", "Steven X"
+          ];
+
+          const teamNumbersData = [
+            "254", "1678", "2056", "971", "1323", "604", "5940", "973", "3476", 
+            "4414", "1690", "6705", "5026", "6036", "8033", "7157", "2073", "2637", 
+            "1572", "581", "1622", "2474", "8048", "6854", "4990", "8840", "687", 
+            "2910", "3939", "3128", "670", "7419", "1662", "8576", "4201", "2702", 
+            "1868", "1164", "4171", "6355", "1538", "1388", "114", "192", "3482", 
+            "841", "2122", "1280", "2489", "399"
+          ];
+
+          // Refs
+          const qrCodeRef = useRef(null);
+          const qrInstanceRef = useRef(null);
+          
+          // State for scouting mode and UI
+          const [scoutingMode, setScoutingMode] = useState('match');
+          const [gameSection, setGameSection] = useState('preMatch');
+          const [showModeModal, setShowModeModal] = useState(false);
+          const [showQRModal, setShowQRModal] = useState(false);
+          const [showFieldMap, setShowFieldMap] = useState(false);
+          const [qrCodePreview, setQrCodePreview] = useState('');
+          const [glassMode, setGlassMode] = useState('none'); // 'none', 'apple', 'green'
+          
+          // QR History for regeneration
+          const [qrHistory, setQrHistory] = useState([]);
+          const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+          
+          // Match Scouting State
+          const [matchData, setMatchData] = useState({
+            scouterName: '',
+            teamNumber: '',
+            matchNumber: '',
+            noShow: false,
+            startPosition: '',
+            
+            // Autonomous
+            autoHubScored: 0,
+            autoHubMissed: 0,
+            autoCollectDepot: false,
+            autoCollectOutpost: false,
+            autoCollectNeutralZone: false,
+            autoClimbTime: '',
+            autoClimbSide: '',
+            
+            // Tele-Op
+            teleHubScored: 0,
+            teleHubMissed: 0,
+            inactiveIntakeNeutralZone: false,
+            inactiveIntakeOpponentZone: false,
+            inactivePassNeutralZone: false,
+            inactivePassOpponentZone: false,
+            inactivePushIntoOutpost: false,
+            droveOverBump: '',
+            intakeGround: false,
+            intakeOutpost: false,
+            intakeDepot: false,
+            
+            // End Game
+            matchClimbHeight: '',
+            matchClimbTime: '',
+            matchClimbSide: '',
+            robotDied: '',
+            
+            comments: ''
+          });
+
+          // Pit Scouting State
+          const [pitData, setPitData] = useState({
+            scouterName: '',
+            teamNumber: '',
+            traverseBump: false,
+            traverseTrench: false,
+            fuelStorageMax: '',
+            hopperDimensions: '',
+            intakeGround: false,
+            intakeOutpost: false,
+            intakeDepot: false,
+            autoAlign: false,
+            autoNeutralZone: false,
+            autoOutpost: false,
+            autoDepot: false,
+            autoL1: false,
+            autoScorePreLoaded: false,
+            autoPlan: '',
+            climbL1: false,
+            climbL2: false,
+            climbL3: false,
+            climbCenter: false,
+            climbSide: false,
+            climbAbility: false,
+            intakeThrough: false,
+            intakeOver: false,
+            driveTrain: '',
+            driverExperience: '',
+            driverSkill: '',
+            robotPurpose: '',
+            buildQuality: '',
+            programmingLanguage: '',
+            helpNeeded: false,
+            typeHelpNeeded: '',
+            comments: ''
+          });
+
+          // Initialize QR Code instance
+          useEffect(() => {
+            if (showQRModal && qrCodeRef.current && !qrInstanceRef.current) {
+              if (typeof window.QRCode !== 'undefined') {
+                qrInstanceRef.current = new window.QRCode(qrCodeRef.current, {
+                  text: "",
+                  width: 300,
+                  height: 300,
+                  colorDark: "#000000",
+                  colorLight: "#ffffff",
+                  correctLevel: window.QRCode.CorrectLevel.L
+                });
+              }
+            }
+          }, [showQRModal]);
+
+          const toggleFullscreen = () => {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen();
+            } else {
+              document.exitFullscreen();
+            }
+          };
+
+          const cycleGlassMode = () => {
+            if (glassMode === 'none') setGlassMode('apple');
+            else if (glassMode === 'apple') setGlassMode('green');
+            else setGlassMode('none');
+          };
+
+          const generateMatchQR = () => {
+            const dataArray = [
+              matchData.scouterName,
+              matchData.teamNumber,
+              matchData.matchNumber,
+              matchData.noShow,
+              matchData.startPosition,
+              matchData.autoHubScored,
+              matchData.autoHubMissed,
+              matchData.autoCollectDepot,
+              matchData.autoCollectOutpost,
+              matchData.autoCollectNeutralZone,
+              matchData.autoClimbTime,
+              matchData.autoClimbSide,
+              matchData.teleHubScored,
+              matchData.teleHubMissed,
+              matchData.inactiveIntakeNeutralZone,
+              matchData.inactiveIntakeOpponentZone,
+              matchData.inactivePassNeutralZone,
+              matchData.inactivePassOpponentZone,
+              matchData.inactivePushIntoOutpost,
+              matchData.droveOverBump,
+              matchData.intakeGround,
+              matchData.intakeOutpost,
+              matchData.intakeDepot,
+              matchData.matchClimbHeight,
+              matchData.matchClimbTime,
+              matchData.matchClimbSide,
+              matchData.robotDied,
+              matchData.comments,
+              new Date().toLocaleTimeString()
+            ];
+            
+            console.log('Match Data:', dataArray.join('\t'));
+            const preview = `${matchData.scouterName} | ${matchData.teamNumber} | ${matchData.matchNumber}`;
+            setQrCodePreview(preview);
+            
+            // Add to history
+            setQrHistory(prev => [...prev, { data: dataArray, preview, type: 'match' }]);
+            
+            setShowQRModal(true);
+            
+            setTimeout(() => {
+              if (!qrInstanceRef.current && qrCodeRef.current) {
+                qrInstanceRef.current = new window.QRCode(qrCodeRef.current, {
+                  text: "",
+                  width: 300,
+                  height: 300,
+                  colorDark: "#000000",
+                  colorLight: "#ffffff",
+                  correctLevel: window.QRCode.CorrectLevel.L
+                });
+              }
+              
+              if (qrInstanceRef.current) {
+                qrInstanceRef.current.clear();
+                qrInstanceRef.current.makeCode(dataArray.join('\t'));
+              }
+            }, 100);
+          };
+
+          const generatePitQR = () => {
+            const dataArray = Object.values(pitData);
+            dataArray.push(new Date().toLocaleTimeString());
+            
+            console.log('Pit Data:', dataArray.join('\t'));
+            const preview = `${pitData.scouterName} | ${pitData.teamNumber}`;
+            setQrCodePreview(preview);
+            
+            // Add to history
+            setQrHistory(prev => [...prev, { data: dataArray, preview, type: 'pit' }]);
+            
+            setShowQRModal(true);
+            
+            setTimeout(() => {
+              if (!qrInstanceRef.current && qrCodeRef.current) {
+                qrInstanceRef.current = new window.QRCode(qrCodeRef.current, {
+                  text: "",
+                  width: 300,
+                  height: 300,
+                  colorDark: "#000000",
+                  colorLight: "#ffffff",
+                  correctLevel: window.QRCode.CorrectLevel.L
+                });
+              }
+              
+              if (qrInstanceRef.current) {
+                qrInstanceRef.current.clear();
+                qrInstanceRef.current.makeCode(dataArray.join('\t'));
+              }
+            }, 100);
+          };
+
+          const regenerateQR = (historyItem) => {
+            setQrCodePreview(historyItem.preview);
+            setShowRegenerateModal(false);
+            setShowQRModal(true);
+            
+            setTimeout(() => {
+              if (!qrInstanceRef.current && qrCodeRef.current) {
+                qrInstanceRef.current = new window.QRCode(qrCodeRef.current, {
+                  text: "",
+                  width: 300,
+                  height: 300,
+                  colorDark: "#000000",
+                  colorLight: "#ffffff",
+                  correctLevel: window.QRCode.CorrectLevel.L
+                });
+              }
+              
+              if (qrInstanceRef.current) {
+                qrInstanceRef.current.clear();
+                qrInstanceRef.current.makeCode(historyItem.data.join('\t'));
+              }
+            }, 100);
+          };
+
+          const closeQR = () => {
+            if (qrInstanceRef.current) {
+              qrInstanceRef.current.clear();
+            }
+            setShowQRModal(false);
+          };
+
+          const resetMatchForm = () => {
+            if (qrInstanceRef.current) {
+              qrInstanceRef.current.clear();
+              if (qrCodeRef.current) {
+                qrCodeRef.current.innerHTML = '';
+              }
+              qrInstanceRef.current = null;
+            }
+            
+            const nextMatchNumber = matchData.matchNumber ? String(Number(matchData.matchNumber) + 1) : '';
+            
+            setMatchData({
+              scouterName: matchData.scouterName,
+              teamNumber: '',
+              matchNumber: nextMatchNumber,
+              noShow: false,
+              startPosition: '',
+              autoHubScored: 0,
+              autoHubMissed: 0,
+              autoCollectDepot: false,
+              autoCollectOutpost: false,
+              autoCollectNeutralZone: false,
+              autoClimbTime: '',
+              autoClimbSide: '',
+              teleHubScored: 0,
+              teleHubMissed: 0,
+              inactiveIntakeNeutralZone: false,
+              inactiveIntakeOpponentZone: false,
+              inactivePassNeutralZone: false,
+              inactivePassOpponentZone: false,
+              inactivePushIntoOutpost: false,
+              droveOverBump: '',
+              intakeGround: false,
+              intakeOutpost: false,
+              intakeDepot: false,
+              matchClimbHeight: '',
+              matchClimbTime: '',
+              matchClimbSide: '',
+              robotDied: '',
+              comments: ''
+            });
+          };
+
+          const resetPitForm = () => {
+            if (qrInstanceRef.current) {
+              qrInstanceRef.current.clear();
+              if (qrCodeRef.current) {
+                qrCodeRef.current.innerHTML = '';
+              }
+              qrInstanceRef.current = null;
+            }
+            
+            setPitData({
+              scouterName: pitData.scouterName,
+              teamNumber: '',
+              traverseBump: false,
+              traverseTrench: false,
+              fuelStorageMax: '',
+              hopperDimensions: '',
+              intakeGround: false,
+              intakeOutpost: false,
+              intakeDepot: false,
+              autoAlign: false,
+              autoNeutralZone: false,
+              autoOutpost: false,
+              autoDepot: false,
+              autoL1: false,
+              autoScorePreLoaded: false,
+              autoPlan: '',
+              climbL1: false,
+              climbL2: false,
+              climbL3: false,
+              climbCenter: false,
+              climbSide: false,
+              climbAbility: false,
+              intakeThrough: false,
+              intakeOver: false,
+              driveTrain: '',
+              driverExperience: '',
+              driverSkill: '',
+              robotPurpose: '',
+              buildQuality: '',
+              programmingLanguage: '',
+              helpNeeded: false,
+              typeHelpNeeded: '',
+              comments: ''
+            });
+          };
+
+          const resetData = () => {
+            setShowQRModal(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (scoutingMode === 'match') {
+              resetMatchForm();
+            } else {
+              resetPitForm();
+            }
+          };
+
+          // Auto-clear climb time and side if height is "Not Tried" or empty
+          useEffect(() => {
+            if (matchData.matchClimbHeight === 'Not Tried' || matchData.matchClimbHeight === '') {
+              setMatchData(prev => ({
+                ...prev,
+                matchClimbTime: '',
+                matchClimbSide: ''
+              }));
+            }
+          }, [matchData.matchClimbHeight]);
+
+          // Auto-clear auto climb side if auto climb time is "Not Tried" or empty
+          useEffect(() => {
+            if (matchData.autoClimbTime === 'Not Tried' || matchData.autoClimbTime === '') {
+              setMatchData(prev => ({
+                ...prev,
+                autoClimbSide: ''
+              }));
+            }
+          }, [matchData.autoClimbTime]);
+
+          // Get background style based on glass mode
+          const getBackgroundStyle = () => {
+            if (glassMode === 'apple') {
+              return {
+                position: 'relative',
+                minHeight: '100vh'
+              };
+            } else if (glassMode === 'green') {
+              return {
+                background: '#2E7D32',
+                minHeight: '100vh'
+              };
+            } else {
+              return {
+                background: 'linear-gradient(to bottom, #2E7D32 0%, #66BB6A 100%)',
+                minHeight: '100vh'
+              };
+            }
+          };
+
+          return (
+            <div className="scoutingApp" style={getBackgroundStyle()}>
+              {/* Fixed background image layer for Apple Glass mode */}
+              {glassMode === 'apple' && (
+                <div style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: `url(${IMAGE_CONFIG.background})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  zIndex: -1
+                }} />
+              )}
+              
+              <style>{`
+                * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  user-select: none;
+                }
+
+                body {
+                  background: linear-gradient(to bottom, #2E7D32 0%, #66BB6A 100%);
+                  min-height: 100vh;
+                  margin: 0;
+                  padding: 0;
+                }
+
+                .scoutingApp {
+                  max-width: 800px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  min-height: 100vh;
+                }
+
+                #navigationBar {
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  background: rgba(0, 0, 0, 0.90);
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
+                  padding: 15px;
+                  display: flex;
+                  gap: 10px;
+                  z-index: 1000;
+                  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                }
+
+                #navigationBar button {
+                  background: #4CAF50;
+                  color: white;
+                  border: none;
+                  padding: 10px 20px;
+                  font-size: 1.2rem;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  transition: background 0.3s;
+                }
+
+                #navigationBar button:hover {
+                  background: #45a049;
+                }
+
+                #navigationBar .settingsBtn {
+                  margin-left: auto;
+                }
+
+                .section {
+                  background: ${glassMode === 'apple' 
+                    ? 'rgba(255, 255, 255, 0.1)' 
+                    : glassMode === 'green' 
+                      ? 'rgba(255, 255, 255, 0.1)' 
+                      : 'white'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(5px) saturate(180%)' : 'none'};
+                  -webkit-backdrop-filter: ${glassMode !== 'none' ? 'blur(30px) saturate(180%)' : 'none'};
+                  border: ${glassMode !== 'none' ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};
+                  border-radius: 15px;
+                  padding: 30px;
+                  margin-top: 80px;
+                  box-shadow: ${glassMode !== 'none' 
+                    ? '0 8px 32px 0 rgba(31, 38, 135, 0.2)' 
+                    : '0 10px 30px rgba(0, 0, 0, 0.2)'};
+                }
+
+                h1 {
+                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  margin-bottom: 10px;
+                  font-size: 2rem;
+                  text-shadow: ${glassMode !== 'none' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};
+                  font-weight: 700;
+                }
+
+                h2 {
+                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#2a2a2a' : '#555'};
+                  margin: 30px 0 20px 0;
+                  font-size: 1.5rem;
+                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                  font-weight: 600;
+                }
+
+                hr {
+                  border: none;
+                  border-top: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  margin: 20px 0;
+                }
+
+                label {
+                  display: block;
+                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  font-weight: 600;
+                  margin: 15px 0 5px 0;
+                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                }
+
+                input[type="text"],
+                input[type="number"],
+                select {
+                  width: 100%;
+                  padding: 12px;
+                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border-radius: 8px;
+                  font-size: 1rem;
+                  transition: border-color 0.3s, background 0.3s;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  font-weight: 500;
+                }
+
+                input[type="text"]:focus,
+                input[type="number"]:focus,
+                select:focus {
+                  outline: none;
+                  border-color: #4CAF50;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.35)' : 'white'};
+                }
+
+                input[type="checkbox"],
+                input[type="radio"] {
+                  width: 20px;
+                  height: 20px;
+                  cursor: pointer;
+                  margin-left: 10px;
+                }
+
+                textarea {
+                  width: 100%;
+                  padding: 12px;
+                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border-radius: 8px;
+                  font-size: 1rem;
+                  resize: vertical;
+                  min-height: 100px;
+                  margin: 10px 0;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  font-weight: 500;
+                }
+
+                .generateButton,
+                .regenerateButton {
+                  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+                  color: white;
+                  border: none;
+                  padding: 15px 30px;
+                  font-size: 1.1rem;
+                  font-weight: bold;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  margin: 20px 10px;
+                  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+                  transition: transform 0.2s, box-shadow 0.2s;
+                }
+
+                .generateButton:hover,
+                .regenerateButton:hover {
+                  transform: translateY(-2px);
+                  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+                }
+
+                .generateButton:active,
+                .regenerateButton:active {
+                  transform: translateY(0);
+                }
+
+                .numberStepperSection {
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.15)' : '#f5f5f5'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  padding: 20px;
+                  border-radius: 10px;
+                  margin: 20px 0;
+                  border: ${glassMode !== 'none' ? '1px solid rgba(255,255,255,0.15)' : 'none'};
+                }
+
+                .numberStepperSection label {
+                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  font-size: 1.2rem;
+                  margin-bottom: 15px;
+                  font-weight: 600;
+                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                }
+
+                .stepperContent {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 15px;
+                }
+
+                .numberDisplay {
+                  font-size: 3rem;
+                  font-weight: bold;
+                  color: #4CAF50;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.3)' : 'white'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  padding: 20px 40px;
+                  border-radius: 10px;
+                  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                  border: ${glassMode !== 'none' ? '1px solid rgba(255,255,255,0.2)' : 'none'};
+                }
+
+                .stepButtons {
+                  display: flex;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                  justify-content: center;
+                }
+
+                .stepButtons button {
+                  background: #4CAF50;
+                  color: white;
+                  border: none;
+                  padding: 10px 20px;
+                  font-size: 1rem;
+                  font-weight: bold;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  transition: background 0.3s;
+                }
+
+                .stepButtons button:hover {
+                  background: #45a049;
+                }
+
+                .radio {
+                  margin: 25px 0;
+                }
+
+                .radio p {
+                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  font-weight: 600;
+                  font-size: 1.1rem;
+                  margin-bottom: 15px;
+                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                }
+
+                .mandatory {
+                  color: #f44336;
+                  font-size: 1.2rem;
+                  margin-left: 5px;
+                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'};
+                }
+
+                .radioInput,
+                .radioInputBool {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 15px;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.1)' : '#f9f9f9'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  padding: 15px;
+                  border-radius: 8px;
+                  border: ${glassMode !== 'none' ? '1px solid rgba(255,255,255,0.15)' : 'none'};
+                }
+
+                .radioOption {
+                  display: flex;
+                  align-items: center;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  padding: 10px 15px;
+                  border-radius: 5px;
+                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  transition: all 0.3s;
+                }
+
+                .radioOption:hover {
+                  border-color: #4CAF50;
+                  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.3)' : 'white'};
+                }
+
+                .radioLabel {
+                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  font-weight: 500;
+                  margin: 0;
+                  cursor: pointer;
+                }
+
+                .modal {
+                  position: fixed;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  background: rgba(255, 255, 255, 0.95);
+                  backdrop-filter: blur(20px);
+                  -webkit-backdrop-filter: blur(20px);
+                  padding: 30px;
+                  border-radius: 15px;
+                  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+                  border: 1px solid rgba(255, 255, 255, 0.3);
+                  z-index: 2000;
+                  min-width: 300px;
+                  max-height: 80vh;
+                  overflow-y: auto;
+                }
+
+                .modalOverlay {
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  background: rgba(0, 0, 0, 0.5);
+                  backdrop-filter: blur(5px);
+                  z-index: 1999;
+                }
+
+                .sectionButtons {
+                  display: flex;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                  margin: 20px 0;
+                }
+
+                .sectionButtons button {
+                  flex: 1;
+                  min-width: 120px;
+                  padding: 12px;
+                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.15)' : '#f0f0f0'};
+                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border-radius: 8px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                }
+
+                .sectionButtons button.active {
+                  background: #4CAF50;
+                  color: white;
+                  border-color: #4CAF50;
+                  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+                }
+
+                .gameSection {
+                  display: none;
+                }
+
+                .gameSection.active {
+                  display: block;
+                }
+
+                .multiSelectTitle {
+                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  font-weight: 600;
+                  font-size: 1.1rem;
+                  margin: 20px 0 10px 0;
+                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                }
+
+                #QRCode {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                }
+
+                #QRCode img {
+                  margin: 10px auto;
+                }
+
+                .historyItem {
+                  padding: 15px;
+                  margin: 10px 0;
+                  background: rgba(245, 245, 245, 0.5);
+                  backdrop-filter: blur(10px);
+                  border-radius: 8px;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  border: 2px solid transparent;
+                }
+
+                .historyItem:hover {
+                  border-color: #4CAF50;
+                  background: rgba(232, 245, 233, 0.7);
+                }
+
+                .historyItem strong {
+                  color: #4CAF50;
+                }
+
+                .fieldMapContainer {
+                  max-width: 100%;
+                  max-height: 70vh;
+                  overflow: auto;
+                }
+
+                .fieldMapContainer img {
+                  width: 100%;
+                  height: auto;
+                  border-radius: 8px;
+                }
+
+                .mapButton {
+                  background: #2196F3 !important;
+                  margin-top: 10px;
+                }
+
+                .mapButton:hover {
+                  background: #1976D2 !important;
+                }
+              `}</style>
+
+              {/* Navigation Bar */}
+              <div id="navigationBar">
+                <button onClick={toggleFullscreen}>⛶</button>
+                <button onClick={() => setShowRegenerateModal(true)}>↻</button>
+                <button className="settingsBtn" onClick={() => setShowModeModal(true)}>⚙</button>
+              </div>
+
+              {/* Mode Selection Modal */}
+              {showModeModal && (
+                <>
+                  <div className="modalOverlay" onClick={() => setShowModeModal(false)} />
+                  <div className="modal">
+                    <h2 style={{ marginTop: 0, color: '#333' }}>Settings</h2>
+                    
+                    <h3 style={{ color: '#555', fontSize: '1.1rem', marginTop: 20 }}>Scouting Mode</h3>
+                    <button
+                      className="generateButton"
+                      onClick={() => {
+                        setScoutingMode('match');
+                        setShowModeModal(false);
+                      }}
+                    >
+                      Match Scouting
+                    </button>
+                    <button
+                      className="generateButton"
+                      onClick={() => {
+                        setScoutingMode('pit');
+                        setShowModeModal(false);
+                      }}
+                    >
+                      Pit Scouting
+                    </button>
+
+                    <h3 style={{ color: '#555', fontSize: '1.1rem', marginTop: 20 }}>Visual Style</h3>
+                    <button
+                      className="generateButton"
+                      onClick={cycleGlassMode}
+                      style={{ background: glassMode === 'none' ? '#666' : glassMode === 'apple' ? '#007AFF' : '#4CAF50' }}
+                    >
+                      {glassMode === 'none' ? 'Standard' : glassMode === 'apple' ? 'Apple Glass' : 'Glass'} Mode
+                    </button>
+
+                    <button className="regenerateButton" onClick={() => setShowModeModal(false)}>
+                      Close
+                    </button>
+                    <p style={{ color: '#666', marginTop: 20 }}>Version: 2026.3.0</p>
+                  </div>
+                </>
+              )}
+
+              {/* Field Map Modal */}
+              {showFieldMap && (
+                <>
+                  <div className="modalOverlay" onClick={() => setShowFieldMap(false)} />
+                  <div className="modal">
+                    <h2 style={{ marginTop: 0, color: '#333' }}>Field Position Map</h2>
+                    <div className="fieldMapContainer">
+                      <img src={IMAGE_CONFIG.fieldMap} alt="Field Position Map" />
+                    </div>
+                    <button className="generateButton" onClick={() => setShowFieldMap(false)}>
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Regenerate QR Modal */}
+              {showRegenerateModal && (
+                <>
+                  <div className="modalOverlay" onClick={() => setShowRegenerateModal(false)} />
+                  <div className="modal">
+                    <h2 style={{ marginTop: 0, color: '#333' }}>Regenerate Previous QR Codes</h2>
+                    {qrHistory.length === 0 ? (
+                      <p style={{ color: '#666', padding: '20px' }}>No QR codes generated yet.</p>
+                    ) : (
+                      <div>
+                        {[...qrHistory].reverse().map((item, index) => (
+                          <div 
+                            key={index} 
+                            className="historyItem"
+                            onClick={() => regenerateQR(item)}
+                          >
+                            <strong>{item.type === 'match' ? 'Match' : 'Pit'}:</strong> {item.preview}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <button className="generateButton" onClick={() => setShowRegenerateModal(false)}>
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* QR Code Modal */}
+              {showQRModal && (
+                <>
+                  <div className="modalOverlay" onClick={closeQR} />
+                  <div className="modal" style={{ minWidth: '400px' }}>
+                    <h2 style={{ marginTop: 0, color: '#333' }}>QR Code Generated</h2>
+                    <div style={{ 
+                      padding: '20px', 
+                      background: 'rgba(245, 245, 245, 0.5)', 
+                      backdropFilter: 'blur(10px)',
+                      borderRadius: '8px', 
+                      margin: '20px 0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
+                    }}>
+                      <div id="QRCode" ref={qrCodeRef}></div>
+                      <div style={{ 
+                        color: '#333',
+                        fontWeight: 'bold',
+                        marginTop: '15px',
+                        fontSize: '0.9rem',
+                        textAlign: 'center'
+                      }}>
+                        {qrCodePreview}
+                      </div>
+                    </div>
+                    <button className="generateButton" onClick={closeQR}>
+                      Close
+                    </button>
+                    <button className="regenerateButton" onClick={resetData}>
+                      Reset Data
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Match Scouting Section */}
+              {scoutingMode === 'match' && (
+                <section className="section">
+                  <h1>Match Scouting</h1>
+                  <hr />
+
+                  <h2>Pre-Match</h2>
+
+                  <label htmlFor="scouterName">Scouter Name <span className="mandatory">*</span></label>
+                  <select
+                    value={matchData.scouterName}
+                    onChange={(e) => setMatchData({ ...matchData, scouterName: e.target.value })}
+                  >
+                    <option value="">Select your name...</option>
+                    {scouterNamesData.map(name => <option key={name} value={name}>{name}</option>)}
+                  </select>
+
+                  <label htmlFor="teamNumber">Team Number <span className="mandatory">*</span></label>
+                  <select
+                    value={matchData.teamNumber}
+                    onChange={(e) => setMatchData({ ...matchData, teamNumber: e.target.value })}
+                  >
+                    <option value="">Select team number...</option>
+                    {teamNumbersData.map(num => <option key={num} value={num}>{num}</option>)}
+                  </select>
+
+                  <label htmlFor="matchNumber">Match Number <span className="mandatory">*</span></label>
+                  <input
+                    type="number"
+                    value={matchData.matchNumber}
+                    onChange={(e) => setMatchData({ ...matchData, matchNumber: e.target.value })}
+                  />
+
+                  <label htmlFor="noShow">No Show</label>
+                  <input
+                    type="checkbox"
+                    checked={matchData.noShow}
+                    onChange={(e) => setMatchData({ ...matchData, noShow: e.target.checked })}
+                  />
+
+                  <div className="sectionButtons">
+                    <button
+                      className={gameSection === 'preMatch' ? 'active' : ''}
+                      onClick={() => setGameSection('preMatch')}
+                    >
+                      Pre-Match
+                    </button>
+                    <button
+                      className={gameSection === 'autonomous' ? 'active' : ''}
+                      onClick={() => setGameSection('autonomous')}
+                    >
+                      Autonomous
+                    </button>
+                    <button
+                      className={gameSection === 'teleOp' ? 'active' : ''}
+                      onClick={() => setGameSection('teleOp')}
+                    >
+                      Tele-Op
+                    </button>
+                    <button
+                      className={gameSection === 'endGame' ? 'active' : ''}
+                      onClick={() => setGameSection('endGame')}
+                    >
+                      End Game
+                    </button>
+                  </div>
+
+                  {!matchData.noShow && (
+                    <>
+                      <div className={`gameSection ${gameSection === 'preMatch' ? 'active' : ''}`}>
+                        <RadioGroup
+                          title="Start Position"
+                          name="startPosition"
+                          value={matchData.startPosition}
+                          onChange={(value) => setMatchData({ ...matchData, startPosition: value })}
+                          mandatory={true}
+                          options={[
+                            { label: 'Depot Trench', value: 'Depot Trench' },
+                            { label: 'Depot Bump', value: 'Depot Bump' },
+                            { label: 'Middle Center', value: 'Middle' },
+                            { label: 'Outpost Bump', value: 'Outpost Bump' },
+                            { label: 'Outpost Trench', value: 'Outpost Trench' }
+                          ]}
+                        />
+                        <button 
+                          className="generateButton mapButton" 
+                          onClick={() => setShowFieldMap(true)}
+                        >
+                          View Field Map
+                        </button>
+                      </div>
+
+                      <div className={`gameSection ${gameSection === 'autonomous' ? 'active' : ''}`}>
+                        <NumberStepper
+                          label="Hub - Scored Fuel"
+                          value={matchData.autoHubScored}
+                          onChange={(value) => setMatchData({ ...matchData, autoHubScored: value })}
+                        />
+                        <NumberStepper
+                          label="Hub - Missed Fuel"
+                          value={matchData.autoHubMissed}
+                          onChange={(value) => setMatchData({ ...matchData, autoHubMissed: value })}
+                        />
+
+                        <CheckboxGroup
+                          title="Collected Fuel From"
+                          values={matchData}
+                          onChange={(name, value) => setMatchData({ ...matchData, [name]: value })}
+                          options={[
+                            { name: 'autoCollectDepot', label: 'Depot' },
+                            { name: 'autoCollectOutpost', label: 'Outpost' },
+                            { name: 'autoCollectNeutralZone', label: 'Neutral Zone' }
+                          ]}
+                        />
+
+                        <RadioGroup
+                          title="Auto Climb Time"
+                          name="autoClimbTime"
+                          value={matchData.autoClimbTime}
+                          onChange={(value) => setMatchData({ ...matchData, autoClimbTime: value })}
+                          options={[
+                            { label: '<3 Sec', value: '3 Sec' },
+                            { label: '<5 Sec', value: '5 Sec' },
+                            { label: '<15 Sec', value: '15 Sec' },
+                            { label: '15+ Sec', value: '15+ Sec' },
+                            { label: 'Failed Climb', value: 'Fail' },
+                            { label: 'Not Tried', value: 'Not Tried' }
+                          ]}
+                        />
+
+                        {matchData.autoClimbTime && matchData.autoClimbTime !== 'Not Tried' && (
+                          <RadioGroup
+                            title="Auto Climb Side"
+                            name="autoClimbSide"
+                            value={matchData.autoClimbSide}
+                            onChange={(value) => setMatchData({ ...matchData, autoClimbSide: value })}
+                            options={[
+                              { label: 'Center', value: 'Center' },
+                              { label: 'Side', value: 'Side' }
+                            ]}
+                          />
+                        )}
+                      </div>
+
+                      <div className={`gameSection ${gameSection === 'teleOp' ? 'active' : ''}`}>
+                        <NumberStepper
+                          label="Hub - Scored Fuel"
+                          value={matchData.teleHubScored}
+                          onChange={(value) => setMatchData({ ...matchData, teleHubScored: value })}
+                        />
+                        <NumberStepper
+                          label="Hub - Missed Fuel"
+                          value={matchData.teleHubMissed}
+                          onChange={(value) => setMatchData({ ...matchData, teleHubMissed: value })}
+                        />
+
+                        <CheckboxGroup
+                          title="Inactive Period"
+                          values={matchData}
+                          onChange={(name, value) => setMatchData({ ...matchData, [name]: value })}
+                          options={[
+                            { name: 'inactiveIntakeNeutralZone', label: 'Intake From Neutral Zone' },
+                            { name: 'inactiveIntakeOpponentZone', label: 'Intake from Opponent Alliance Zone' },
+                            { name: 'inactivePassNeutralZone', label: 'Pass From Neutral Zone' },
+                            { name: 'inactivePassOpponentZone', label: 'Pass From Opponent Alliance Zone' },
+                            { name: 'inactivePushIntoOutpost', label: 'Push Into Outpost' }
+                          ]}
+                        />
+
+                        <RadioGroup
+                          title="Drove Over Bump"
+                          name="droveOverBump"
+                          value={matchData.droveOverBump}
+                          onChange={(value) => setMatchData({ ...matchData, droveOverBump: value })}
+                          options={[
+                            { label: 'Yes', value: 'True' },
+                            { label: 'No', value: 'False' }
+                          ]}
+                        />
+
+                        <CheckboxGroup
+                          title="Intakes From"
+                          values={matchData}
+                          onChange={(name, value) => setMatchData({ ...matchData, [name]: value })}
+                          options={[
+                            { name: 'intakeGround', label: 'Ground' },
+                            { name: 'intakeOutpost', label: 'Outpost' },
+                            { name: 'intakeDepot', label: 'Depot' }
+                          ]}
+                        />
+                      </div>
+
+                      <div className={`gameSection ${gameSection === 'endGame' ? 'active' : ''}`}>
+                        <RadioGroup
+                          title="Climb Height"
+                          name="matchClimbHeight"
+                          value={matchData.matchClimbHeight}
+                          onChange={(value) => setMatchData({ ...matchData, matchClimbHeight: value })}
+                          options={[
+                            { label: 'L1', value: 'L1' },
+                            { label: 'L2', value: 'L2' },
+                            { label: 'L3', value: 'L3' },
+                            { label: 'Failed Climb', value: 'Fail' },
+                            { label: 'Not Tried', value: 'Not Tried' }
+                          ]}
+                        />
+
+                        {matchData.matchClimbHeight && matchData.matchClimbHeight !== 'Not Tried' && matchData.matchClimbHeight !== '' && (
+                          <>
+                            <RadioGroup
+                              title="Climb Time"
+                              name="matchClimbTime"
+                              value={matchData.matchClimbTime}
+                              onChange={(value) => setMatchData({ ...matchData, matchClimbTime: value })}
+                              options={[
+                                { label: '<3 Sec', value: '3 Sec' },
+                                { label: '<5 Sec', value: '5 Sec' },
+                                { label: '<15 Sec', value: '15 Sec' },
+                                { label: '15+ Sec', value: '15+ Sec' }
+                              ]}
+                            />
+
+                            <RadioGroup
+                              title="Climb Side"
+                              name="matchClimbSide"
+                              value={matchData.matchClimbSide}
+                              onChange={(value) => setMatchData({ ...matchData, matchClimbSide: value })}
+                              options={[
+                                { label: 'Center', value: 'Center' },
+                                { label: 'Side', value: 'Side' }
+                              ]}
+                            />
+                          </>
+                        )}
+
+                        <RadioGroup
+                          title="Robot Died"
+                          name="robotDied"
+                          value={matchData.robotDied}
+                          onChange={(value) => setMatchData({ ...matchData, robotDied: value })}
+                          options={[
+                            { label: '<10 Sec', value: '10 Sec' },
+                            { label: '<30 Sec', value: '30 Sec' },
+                            { label: '<60 Sec', value: '60 Sec' },
+                            { label: 'Entire Match', value: 'Match' },
+                            { label: "Didn't Die", value: 'No Death' }
+                          ]}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <label htmlFor="comments">Comments</label>
+                  <textarea
+                    value={matchData.comments}
+                    onChange={(e) => setMatchData({ ...matchData, comments: e.target.value })}
+                    placeholder="Anything else about how the match went?"
+                  />
+
+                  <div style={{ textAlign: 'center' }}>
+                    <button className="regenerateButton" onClick={resetMatchForm}>
+                      Reset
+                    </button>
+                    <button className="generateButton" onClick={generateMatchQR}>
+                      Generate QR Code
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {/* Pit Scouting Section */}
+              {scoutingMode === 'pit' && (
+                <section className="section">
+                  <h1>Pit Scouting</h1>
+                  <hr />
+
+                  <label htmlFor="scouterName">Scouter Name <span className="mandatory">*</span></label>
+                  <select
+                    value={pitData.scouterName}
+                    onChange={(e) => setPitData({ ...pitData, scouterName: e.target.value })}
+                  >
+                    <option value="">Select your name...</option>
+                    {scouterNamesData.map(name => <option key={name} value={name}>{name}</option>)}
+                  </select>
+
+                  <label htmlFor="teamNumber">Team Number <span className="mandatory">*</span></label>
+                  <select
+                    value={pitData.teamNumber}
+                    onChange={(e) => setPitData({ ...pitData, teamNumber: e.target.value })}
+                  >
+                    <option value="">Select team number...</option>
+                    {teamNumbersData.map(num => <option key={num} value={num}>{num}</option>)}
+                  </select>
+
+                  <CheckboxGroup
+                    title="Can Traverse"
+                    values={pitData}
+                    onChange={(name, value) => setPitData({ ...pitData, [name]: value })}
+                    options={[
+                      { name: 'traverseBump', label: 'Over Bump' },
+                      { name: 'traverseTrench', label: 'Under Trench (22 in.)' }
+                    ]}
+                  />
+
+                  <p className="multiSelectTitle">Hopper</p>
+                  <label htmlFor="fuelStorageMax">How Much Fuel Can Hopper Store</label>
+                  <input
+                    type="text"
+                    value={pitData.fuelStorageMax}
+                    onChange={(e) => setPitData({ ...pitData, fuelStorageMax: e.target.value })}
+                  />
+
+                  <label htmlFor="hopperDimensions">Hopper Dimensions</label>
+                  <input
+                    type="text"
+                    value={pitData.hopperDimensions}
+                    onChange={(e) => setPitData({ ...pitData, hopperDimensions: e.target.value })}
+                  />
+
+                  <CheckboxGroup
+                    title="Where Can Your Robot Collect Fuel From"
+                    values={pitData}
+                    onChange={(name, value) => setPitData({ ...pitData, [name]: value })}
+                    options={[
+                      { name: 'intakeGround', label: 'Ground' },
+                      { name: 'intakeOutpost', label: 'Outpost' },
+                      { name: 'intakeDepot', label: 'Depot' }
+                    ]}
+                  />
+
+                  <label htmlFor="comments">Comments</label>
+                  <textarea
+                    value={pitData.comments}
+                    onChange={(e) => setPitData({ ...pitData, comments: e.target.value })}
+                    placeholder="Any additional notes about the robot?"
+                  />
+
+                  <div style={{ textAlign: 'center' }}>
+                    <button className="regenerateButton" onClick={resetPitForm}>
+                      Reset
+                    </button>
+                    <button className="generateButton" onClick={generatePitQR}>
+                      Generate QR Code
+                    </button>
+                  </div>
+                </section>
+              )}
+            </div>
+          );
+        }
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ScoutingApp />);
+    </script>
+</body>
+</html>
