@@ -6,6 +6,7 @@ scouting-app/
  - index.html           (main app file)
  - field-map.png        (field position)
  - background.png       (bg image)
+```
 
 ## images
 
