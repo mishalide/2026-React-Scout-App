@@ -20,7 +20,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Configuration for images - EDIT THESE PATHSSAJDHKJSADSA
+        // Configuration for images - EDIT THESE PATHS
         const IMAGE_CONFIG = {
           fieldMap: './field-map.png',        // Path to your field position map
           background: './background.png'       // Path to your background image
@@ -88,7 +88,6 @@
                   <div key={option.name} className="radioOption">
                     <label 
                       htmlFor={option.name}
-                      onClick={() => onChange(option.name, !values[option.name])}
                       style={{ cursor: 'pointer' }}
                     >
                       {option.label}
@@ -142,7 +141,8 @@
           const [showQRModal, setShowQRModal] = useState(false);
           const [showFieldMap, setShowFieldMap] = useState(false);
           const [qrCodePreview, setQrCodePreview] = useState('');
-          const [glassMode, setGlassMode] = useState('none'); // 'none', 'apple', 'green'
+          const [glassMode, setGlassMode] = useState('none'); // 'none', 'apple'
+          const [navCollapsed, setNavCollapsed] = useState(false);
           
           // QR History for regeneration
           const [qrHistory, setQrHistory] = useState([]);
@@ -248,10 +248,8 @@
             }
           };
 
-          const cycleGlassMode = () => {
-            if (glassMode === 'none') setGlassMode('apple');
-            else if (glassMode === 'apple') setGlassMode('green');
-            else setGlassMode('none');
+          const toggleGlassMode = () => {
+            setGlassMode(glassMode === 'none' ? 'apple' : 'none');
           };
 
           const generateMatchQR = () => {
@@ -505,11 +503,6 @@
                 position: 'relative',
                 minHeight: '100vh'
               };
-            } else if (glassMode === 'green') {
-              return {
-                background: '#2E7D32',
-                minHeight: '100vh'
-              };
             } else {
               return {
                 background: 'linear-gradient(to bottom, #2E7D32 0%, #66BB6A 100%)',
@@ -564,7 +557,7 @@
                   top: 0;
                   left: 0;
                   right: 0;
-                  background: rgba(0, 0, 0, 0.90);
+                  background: rgba(255, 255, 255, 0.9);
                   backdrop-filter: blur(10px);
                   -webkit-backdrop-filter: blur(10px);
                   padding: 15px;
@@ -572,6 +565,37 @@
                   gap: 10px;
                   z-index: 1000;
                   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                  transition: transform 0.3s ease;
+                }
+
+                #navigationBar.collapsed {
+                  transform: translateY(-100%);
+                }
+
+                .navToggle {
+                  position: fixed;
+                  top: ${navCollapsed ? '10px' : '70px'};
+                  right: 10px;
+                  background: rgba(255, 255, 255, 0.95);
+                  backdrop-filter: blur(10px);
+                  color: green;
+                  border: none;
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  z-index: 1001;
+                  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                  font-size: 1.2rem;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  transition: all 0.3s ease;
+                }
+
+                .navToggle:hover {
+                  background: rgba(46, 125, 50, 1);
+                  transform: scale(1.1);
                 }
 
                 #navigationBar button {
@@ -594,50 +618,46 @@
                 }
 
                 .section {
-                  background: ${glassMode === 'apple' 
-                    ? 'rgba(255, 255, 255, 0.1)' 
-                    : glassMode === 'green' 
-                      ? 'rgba(255, 255, 255, 0.1)' 
-                      : 'white'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(5px) saturate(180%)' : 'none'};
-                  -webkit-backdrop-filter: ${glassMode !== 'none' ? 'blur(30px) saturate(180%)' : 'none'};
-                  border: ${glassMode !== 'none' ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.25)' : 'white'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(30px) saturate(180%)' : 'none'};
+                  -webkit-backdrop-filter: ${glassMode === 'apple' ? 'blur(30px) saturate(180%)' : 'none'};
+                  border: ${glassMode === 'apple' ? '1px solid rgba(255, 255, 255, 0.2)' : 'none'};
                   border-radius: 15px;
                   padding: 30px;
                   margin-top: 80px;
-                  box-shadow: ${glassMode !== 'none' 
+                  box-shadow: ${glassMode === 'apple' 
                     ? '0 8px 32px 0 rgba(31, 38, 135, 0.2)' 
                     : '0 10px 30px rgba(0, 0, 0, 0.2)'};
                 }
 
                 h1 {
-                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  color: ${glassMode === 'apple' ? '#1a1a1a' : '#333'};
                   margin-bottom: 10px;
                   font-size: 2rem;
-                  text-shadow: ${glassMode !== 'none' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};
                   font-weight: 700;
                 }
 
                 h2 {
-                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#2a2a2a' : '#555'};
+                  color: ${glassMode === 'apple' ? '#2a2a2a' : '#555'};
                   margin: 30px 0 20px 0;
                   font-size: 1.5rem;
-                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
                   font-weight: 600;
                 }
 
                 hr {
                   border: none;
-                  border-top: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border-top: 2px solid ${glassMode === 'apple' ? 'rgba(255,255,255,0.2)' : '#ddd'};
                   margin: 20px 0;
                 }
 
                 label {
                   display: block;
-                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  color: ${glassMode === 'apple' ? '#1a1a1a' : '#333'};
                   font-weight: 600;
                   margin: 15px 0 5px 0;
-                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
                 }
 
                 input[type="text"],
@@ -645,13 +665,13 @@
                 select {
                   width: 100%;
                   padding: 12px;
-                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border: 2px solid ${glassMode === 'apple' ? 'rgba(255,255,255,0.2)' : '#ddd'};
                   border-radius: 8px;
                   font-size: 1rem;
                   transition: border-color 0.3s, background 0.3s;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
-                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
+                  color: #1a1a1a;
                   font-weight: 500;
                 }
 
@@ -660,7 +680,7 @@
                 select:focus {
                   outline: none;
                   border-color: #4CAF50;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.35)' : 'white'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.35)' : 'white'};
                 }
 
                 input[type="checkbox"],
@@ -674,15 +694,15 @@
                 textarea {
                   width: 100%;
                   padding: 12px;
-                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border: 2px solid ${glassMode === 'apple' ? 'rgba(255,255,255,0.2)' : '#ddd'};
                   border-radius: 8px;
                   font-size: 1rem;
                   resize: vertical;
                   min-height: 100px;
                   margin: 10px 0;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
-                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
+                  color: #1a1a1a;
                   font-weight: 500;
                 }
 
@@ -713,20 +733,20 @@
                 }
 
                 .numberStepperSection {
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.15)' : '#f5f5f5'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.15)' : '#f5f5f5'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
                   padding: 20px;
                   border-radius: 10px;
                   margin: 20px 0;
-                  border: ${glassMode !== 'none' ? '1px solid rgba(255,255,255,0.15)' : 'none'};
+                  border: ${glassMode === 'apple' ? '1px solid rgba(255,255,255,0.15)' : 'none'};
                 }
 
                 .numberStepperSection label {
-                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  color: ${glassMode === 'apple' ? '#1a1a1a' : '#333'};
                   font-size: 1.2rem;
                   margin-bottom: 15px;
                   font-weight: 600;
-                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
                 }
 
                 .stepperContent {
@@ -740,12 +760,12 @@
                   font-size: 3rem;
                   font-weight: bold;
                   color: #4CAF50;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.3)' : 'white'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.3)' : 'white'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
                   padding: 20px 40px;
                   border-radius: 10px;
                   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                  border: ${glassMode !== 'none' ? '1px solid rgba(255,255,255,0.2)' : 'none'};
+                  border: ${glassMode === 'apple' ? '1px solid rgba(255,255,255,0.2)' : 'none'};
                 }
 
                 .stepButtons {
@@ -776,18 +796,18 @@
                 }
 
                 .radio p {
-                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  color: ${glassMode === 'apple' ? '#1a1a1a' : '#333'};
                   font-weight: 600;
                   font-size: 1.1rem;
                   margin-bottom: 15px;
-                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
                 }
 
                 .mandatory {
                   color: #f44336;
                   font-size: 1.2rem;
                   margin-left: 5px;
-                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'};
                 }
 
                 .radioInput,
@@ -795,35 +815,40 @@
                   display: flex;
                   flex-wrap: wrap;
                   gap: 15px;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.1)' : '#f9f9f9'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.1)' : '#f9f9f9'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
                   padding: 15px;
                   border-radius: 8px;
-                  border: ${glassMode !== 'none' ? '1px solid rgba(255,255,255,0.15)' : 'none'};
+                  border: ${glassMode === 'apple' ? '1px solid rgba(255,255,255,0.15)' : 'none'};
                 }
 
                 .radioOption {
                   display: flex;
                   align-items: center;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.2)' : 'white'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
                   padding: 10px 15px;
                   border-radius: 5px;
-                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  border: 2px solid ${glassMode === 'apple' ? 'rgba(255,255,255,0.2)' : '#ddd'};
                   transition: all 0.3s;
                 }
 
                 .radioOption:hover {
                   border-color: #4CAF50;
                   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.3)' : 'white'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.3)' : 'white'};
                 }
 
                 .radioLabel {
-                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  color: #1a1a1a;
                   font-weight: 500;
                   margin: 0;
                   cursor: pointer;
+                }
+
+                input[type="checkbox"]:checked,
+                input[type="radio"]:checked {
+                  accent-color: #4CAF50;
                 }
 
                 .modal {
@@ -866,14 +891,14 @@
                   flex: 1;
                   min-width: 120px;
                   padding: 12px;
-                  background: ${glassMode !== 'none' ? 'rgba(255, 255, 255, 0.15)' : '#f0f0f0'};
-                  backdrop-filter: ${glassMode !== 'none' ? 'blur(10px)' : 'none'};
-                  border: 2px solid ${glassMode !== 'none' ? 'rgba(255,255,255,0.2)' : '#ddd'};
+                  background: ${glassMode === 'apple' ? 'rgba(255, 255, 255, 0.15)' : '#f0f0f0'};
+                  backdrop-filter: ${glassMode === 'apple' ? 'blur(10px)' : 'none'};
+                  border: 2px solid ${glassMode === 'apple' ? 'rgba(255,255,255,0.2)' : '#ddd'};
                   border-radius: 8px;
                   font-weight: 600;
                   cursor: pointer;
                   transition: all 0.3s;
-                  color: ${glassMode !== 'none' ? '#1a1a1a' : '#333'};
+                  color: #1a1a1a;
                 }
 
                 .sectionButtons button.active {
@@ -892,11 +917,11 @@
                 }
 
                 .multiSelectTitle {
-                  color: ${glassMode === 'green' ? '#ffffff' : glassMode === 'apple' ? '#1a1a1a' : '#333'};
+                  color: ${glassMode === 'apple' ? '#1a1a1a' : '#333'};
                   font-weight: 600;
                   font-size: 1.1rem;
                   margin: 20px 0 10px 0;
-                  text-shadow: ${glassMode !== 'none' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
+                  text-shadow: ${glassMode === 'apple' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'};
                 }
 
                 #QRCode {
@@ -939,20 +964,47 @@
                   width: 100%;
                   height: auto;
                   border-radius: 8px;
+                  display: block;
                 }
 
                 .mapButton {
-                  background: #2196F3 !important;
+                  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%) !important;
                   margin-top: 10px;
                 }
 
                 .mapButton:hover {
-                  background: #1976D2 !important;
+                  background: linear-gradient(135deg, #45a049 0%, #5cb85c 100%) !important;
+                }
+
+                /* Fix for mobile image rendering */
+                img {
+                  max-width: 100%;
+                  height: auto;
+                  -webkit-transform: translateZ(0);
+                  transform: translateZ(0);
+                }
+
+                /* Ensure background images work on mobile */
+                @supports (-webkit-touch-callout: none) {
+                  #navigationBar,
+                  .section,
+                  .radioOption,
+                  .numberDisplay,
+                  input,
+                  select,
+                  textarea {
+                    -webkit-transform: translateZ(0);
+                    transform: translateZ(0);
+                  }
                 }
               `}</style>
 
               {/* Navigation Bar */}
-              <div id="navigationBar">
+              <button className="navToggle" onClick={() => setNavCollapsed(!navCollapsed)}>
+                {navCollapsed ? '☰' : '✕'}
+              </button>
+              
+              <div id="navigationBar" className={navCollapsed ? 'collapsed' : ''}>
                 <button onClick={toggleFullscreen}>⛶</button>
                 <button onClick={() => setShowRegenerateModal(true)}>↻</button>
                 <button className="settingsBtn" onClick={() => setShowModeModal(true)}>⚙</button>
@@ -988,11 +1040,16 @@
                     <h3 style={{ color: '#555', fontSize: '1.1rem', marginTop: 20 }}>Visual Style</h3>
                     <button
                       className="generateButton"
-                      onClick={cycleGlassMode}
-                      style={{ background: glassMode === 'none' ? '#666' : glassMode === 'apple' ? '#007AFF' : '#4CAF50' }}
+                      onClick={toggleGlassMode}
+                      style={{ background: glassMode === 'apple' ? '#007AFF' : '#666' }}
                     >
-                      {glassMode === 'none' ? 'Standard' : glassMode === 'apple' ? 'Apple Glass' : 'Glass'} Mode
+                      {glassMode === 'none' ? 'Standard Mode' : 'Apple Glass Mode'}
                     </button>
+                    <p style={{ color: '#888', fontSize: '0.9rem', marginTop: 10 }}>
+                      {glassMode === 'none' 
+                        ? 'Switch to Apple Glass for a frosted glass effect with custom background' 
+                        : 'Switch to Standard for solid white cards'}
+                    </p>
 
                     <button className="regenerateButton" onClick={() => setShowModeModal(false)}>
                       Close
