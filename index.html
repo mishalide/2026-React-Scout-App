@@ -370,8 +370,10 @@
           };
 
           const closeQR = () => {
+            // stupid baka function 
             if (qrInstanceRef.current) {
               qrInstanceRef.current.clear();
+              qrInstanceRef.current = null;
             }
             setShowQRModal(false);
           };
