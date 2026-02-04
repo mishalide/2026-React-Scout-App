@@ -1515,7 +1515,7 @@
                   <p className="multiSelectTitle">Hopper</p>
                   <label htmlFor="fuelStorageMax">How Much Fuel Can Hopper Store</label>
                   <input
-                    type="text"
+                    type="number"
                     value={pitData.fuelStorageMax}
                     onChange={(e) => setPitData({ ...pitData, fuelStorageMax: e.target.value })}
                   />
@@ -1539,10 +1539,10 @@
                   />
 
                   <RadioGroup
-                    title="Does Your Robot Have Auto Align"
+                    title="Does Your Robot Have Auto Align?"
                     name="autoAlign"
                     value={pitData.autoAlign}
-                    onChange={(value) => setMatchData({ ...pitData, autoAlign: value })}
+                    onChange={(value) => setPitData({ ...pitData, autoAlign: value })}
                     options={[
                       { label: 'Yes', value: 'True' },
                       { label: 'No', value: 'False' }
@@ -1605,19 +1605,19 @@
                   <input
                     type="text"
                     value={pitData.driveTrain}
-                    onChange={(e) => setPitData({ ...pitData, autoPlan: e.target.value })}
+                    onChange={(e) => setPitData({ ...pitData, driveTrain: e.target.value })}
                   />
 
                   <label htmlFor="driverExperience">Driver Experience In Years</label>
                   <input
-                    type="text"
+                    type="number"
                     value={pitData.driverExperience}
                     onChange={(e) => setPitData({ ...pitData, driverExperience: e.target.value })}
                   />
 
                   <label htmlFor="driverSkill">Driver Experience In Hours</label>
                   <input
-                    type="text"
+                    type="number"
                     value={pitData.driverSkill}
                     onChange={(e) => setPitData({ ...pitData, driverSkill: e.target.value })}
                   />
@@ -1644,8 +1644,8 @@
                   <RadioGroup
                     title="Help Needed"
                     name="helpNeeded"
-                    value={pitData.autoAlign}
-                    onChange={(value) => setMatchData({ ...pitData, helpNeeded: value })}
+                    value={pitData.helpNeeded}
+                    onChange={(value) => setPitData({ ...pitData, helpNeeded: value })}
                     options={[
                       { label: 'Yes', value: 'True' },
                       { label: 'No', value: 'False' }
@@ -1655,7 +1655,7 @@
                   <label htmlFor="typeHelpNeeded">Type Of Help Needed</label>
                   <input
                     type="text"
-                    value={pitData.programmingLanguage}
+                    value={pitData.typeHelpNeeded}
                     onChange={(e) => setPitData({ ...pitData, typeHelpNeeded: e.target.value })}
                   />
 
