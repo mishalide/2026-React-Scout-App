@@ -107,11 +107,11 @@
         };
 
         // Slider Component
-        const NumberSlider = ( {title} ) => {
+        const NumberSlider = ( {title, value, onChange} ) => {
           const [sliderValue, setSliderValue] = useState(5); // Initial value
-          
           const handleSliderChange = (event) => {
             setSliderValue(event.target.value);
+            onChange(event.target.value)
           };
 
           return (
@@ -135,7 +135,7 @@
                   min="1"
                   max="10"
                   list="markers"
-                  value={sliderValue}
+                  value={value}
                   onChange={handleSliderChange}
                 />
               </div>
@@ -254,7 +254,7 @@
             driverExperience: '',
             driverSkill: '',
             robotPurpose: '',
-            buildQuality: '',
+            buildQuality: 5,
             programmingLanguage: '',
             helpNeeded: false,
             typeHelpNeeded: '',
@@ -494,7 +494,7 @@
               driverExperience: '',
               driverSkill: '',
               robotPurpose: '',
-              buildQuality: '',
+              buildQuality: 5,
               programmingLanguage: '',
               helpNeeded: false,
               typeHelpNeeded: '',
@@ -1631,7 +1631,8 @@
 
                   <NumberSlider
                     title="Build Quality Of Robot (DO NOT ASK!!!)"
-                    onChange={(value) => setMatchData({ ...pitData, buildQuality: value })}
+                    value={pitData.buildQuality}
+                    onChange={(value) => setPitData({ ...pitData, buildQuality: value })}
                   />
 
                   <label htmlFor="programmingLanguage">What Programming Language Is Your Robot Coded In?</label>
