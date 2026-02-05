@@ -35,8 +35,6 @@ the app has 3 visual modes (cycle through them in settings):
 
 1. **Standard Mode** - Clean white cards on green gradient background
 2. **Glass Mode** - transparent frosted glass with the bg image
-3. **green glass mode** - super ugly and i am removing it
-
 
 ## Using on Tablets
 
