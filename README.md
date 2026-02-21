@@ -13,12 +13,19 @@
 ### list of features
 
 *FULLY* offline! 
+
 qr code regeneration with history
+
 clickable labels for easy selection
+
 nandatory field indicators (*)
+
 climb fields hide when Na
+
 you can see the field map
+
 a nice(ish) UI
+
 keeps scouter name on reset + it'll increase match # by 1
 
 ## navigation buttons
