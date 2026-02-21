@@ -1,6 +1,7 @@
-# Pearadox 2026 Scouting App 
+# Pearametrics
+## Pearadox's 2026 React based scouting app
 
-# use the mobile-hotfix branch for fully offline support 
+-----------------------------------------------------------
 
 ## Using on Tablets
 
