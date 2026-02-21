@@ -10,16 +10,16 @@
 2. (OPTIONAL) Tap menu -> "Add to Home screen" so you can access it via the home screen instead of via files
 
 
-list of features
+### list of features
 
-FULLY offline! 
+*FULLY* offline! 
 qr code regeneration with history
 clickable labels for easy selection
 nandatory field indicators (*)
 climb fields hide when Na
 you can see the field map
 a nice(ish) UI
-keeps scouter name on reset + it;ll increase match # by 1
+keeps scouter name on reset + it'll increase match # by 1
 
 ## navigation buttons
 
@@ -30,5 +30,5 @@ The top navigation bar has buttons
 - **⚙** (right) - settings menu
 
 
-current version: **2026.3.0**
+current version: **2026.4.0**
 
