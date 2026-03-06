@@ -147,11 +147,11 @@
         function ScoutingApp() {
           // Inline dropdown data
           const scouterNamesData = [
-            "Aahana D", "Aashish M", "Alex H", "Alex M", "Anthony K", "Ari L", "Blake M", "Brendon J", "Caelon-James Wonders", "Coby M", "Cypher S", "Daniel X", "Dylan E", "Eduardo M", "Emme T", "Ethan G", "Ev P", "Gabriel C", "Grace J", "Grae P", "Hannah S", "Hitesh M", "Ivan A","Jasper M","Jessica T","JJ M","Johnny C","Julian R","Justin H","Katherine B","Kevin S","Kevin W","Lisa S","Mason L","May L","Michael S","Misha G","Morgan J","Myles N","Natalie C","Nazeer H","Nick Z","Nova P","Nuhan H","Roger C","Roy W","Sean W","Seray G","Shaotan L","Shyam U","Steven X","Trace V","Tripp V","Turtle H"
+            "Aahana D", "Aashish M", "Alex H", "Alex M", "Anthony K", "Ari L", "Blake M", "Brendon J", "Caelon-James Wonders", "Coby M", "Cypher S", "Daniel X", "Dylan E", "Eduardo M", "Emme T", "Ethan G", "Ev P", "Gabriel C", "Grace J", "Grae P", "Hannah S", "Hitesh M", "Ivan A","Jasper M","Jessica T","JJ M","Johnny C","Julian R","Justin H","Katherine B","Kevin S","Kevin W","Lisa S","Mason L","May L","Michael S","Misha G","Morgan J","Myles N","Natalie C","Nazeer H","Nick Z","Nova P","Nuhan H","Roger C","Roy W","Sean W","Seray G","Shaotan L","Shyam U","Steven X","Trace V","Tripp V","Turtle H","Mentor","Other Team","Not Listed"
           ];
 
           const teamNumbersData = [
-            "418","2468","2687","2789","2881","3847","5414","5431","5503","6357","8515","8576","9506","9577","9990","9991","9994","9998","10014"
+            "118", "127", "324", "1477", "3847", "4639", "5261", "5414", "5417", "5431", "5788", "5790", "5892", "5923", "6243", "6377", "6645", "6800", "7115", "7312", "7492", "7616", "8177", "8370", "8591", "9128", "9181", "9289", "9307", "9478", "9521", "10118", "10340", "11277"
           ];
 
           // Refs
@@ -496,6 +496,7 @@
 
           const resetData = () => {
             setShowQRModal(false);
+            setGameSection('preMatch')
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (scoutingMode === 'match') {
               resetMatchForm();
@@ -1218,13 +1219,19 @@
                   </select>
 
                   <label htmlFor="teamNumber">Team Number <span className="mandatory">*</span></label>
-                  <select
+                  <datalist id="TeamNumbersDatalist">
+                    {teamNumbersData.map(num => <option key={num} value={num}>{num}</option>)}
+                  </datalist>
+                  <input
+                  type="text"
                     value={matchData.teamNumber}
                     onChange={(e) => setMatchData({ ...matchData, teamNumber: e.target.value })}
-                  >
-                    <option value="">Select team number...</option>
-                    {teamNumbersData.map(num => <option key={num} value={num}>{num}</option>)}
-                  </select>
+                    list="TeamNumbersDatalist"
+                  />
+
+                  {!teamNumbersData.includes(matchData.teamNumber) && (
+                    <span><b>Please Choose A Team Number From The List</b></span>
+                  )}
 
                   <label htmlFor="matchNumber">Match Number <span className="mandatory">*</span></label>
                   <input
@@ -1460,7 +1467,7 @@
                   />
 
                   <div style={{ textAlign: 'center' }}>
-                    <button className="regenerateButton" onClick={resetMatchForm}>
+                    <button className="regenerateButton" onClick={resetData}>
                       Reset
                     </button>
                     <button className="generateButton" onClick={generateMatchQR}>
