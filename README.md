@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-2026.Aldine.2-blue)](https://github.com/mishalide/2026-React-Scout-App)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)](https://react.dev)
-[![GitHub Pages](https://github.com/mishalide/2026-React-Scout-App/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/mishalide/2026-React-Scout-App/actions/workflows/pages/pages-build-deployment)
+[![pages-build-deployment](https://github.com/mishalide/2026-React-Scout-App/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/mishalide/2026-React-Scout-App/actions/workflows/pages/pages-build-deployment)
 
 **[Check out the app!](https://mishalide.github.io/2026-React-Scout-App/)**
 
