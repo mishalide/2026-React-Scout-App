@@ -14,7 +14,7 @@ A React-based FRC scouting app built by Pearadox 5414. Runs entirely offline fro
 
 ### Android (Recommended)
 1. Transfer `index.html` to the tablet in Chrome
-2. *(Optional)* Tap the menu → **"Add to Home screen"** to create a shortcut.
+2. *(Optional)* Tap the menu -> **"Add to Home screen"** to create a shortcut.
 
 ### Windows/Linux
 1. Open the `index.html` file
@@ -137,4 +137,4 @@ Once a form is complete, tap generate QR Code. The QR encodes all scouted data a
 
 ## Used By
 
-See [TEAMS.md](TEAMS.md) — if you've used Pearametrics at a competition, open a PR and add your team!
+See [TEAMS.md](TEAMS.md) if you've used Pearametrics at a competition, open a PR and add your team ^_^
