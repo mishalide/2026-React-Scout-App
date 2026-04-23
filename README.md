@@ -1,6 +1,6 @@
 # Pearametrics | Pearadox's 2026 Scouting App
 
-[![Version](https://img.shields.io/badge/version-2026.Aldine.2-blue)](https://github.com/mishalide/2026-React-Scout-App)
+[![Version](https://img.shields.io/badge/version-2026.Worlds.1-blue)](https://github.com/mishalide/2026-React-Scout-App)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![pages-build-deployment](https://github.com/mishalide/2026-React-Scout-App/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/mishalide/2026-React-Scout-App/actions/workflows/pages/pages-build-deployment)
 
@@ -28,7 +28,9 @@ A React-based FRC scouting app built by Pearadox 5414. Runs entirely offline fro
 
 ## Customization
 
-**Before using at a competition, update these two lists inside `index.html`:**
+**As of the latest version, we've added a feature to automatically update team numbers based on match and version chosen in settings. If you want team numbers to automatically update, update the constants `schedule1` through `schedule6`, where each schedule is a respective position (i.e. red 1, red 2, blue 3, blue).
+
+**Before using at a competition, please update these two lists inside `index.html`:**
 
 - **`scouterNamesData`**: the list of scouter names shown in the dropdown
 - **`teamNumbersData`**: the team numbers for the competition
